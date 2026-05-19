@@ -1,0 +1,83 @@
+name: CI/CD
+
+on:
+  push:
+    branches: ["master"]
+    tags:    ["v*.*.*"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: write   # needed to create GitHub Releases
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  # Build
+  # ──────────────────────────────────────────────────────────────
+  build:
+    name: Build (Windows / MinGW)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install MinGW-w64 (provides gcc, g++, windres, make)
+      - name: Set up MinGW
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-make
+
+      - name: Configure (CMake)
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build \
+                -G "MinGW Makefiles" \
+                -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        shell: msys2 {0}
+        run: cmake --build build --config Release --parallel
+
+      - name: Verify executable exists
+        shell: msys2 {0}
+        run: test -f build/LangSwitcher.exe
+
+      # Upload the .exe so every successful run has a downloadable artifact
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LangSwitcher-windows-x64
+          path: build/LangSwitcher.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────────
+  # Release  (only on version tags, e.g. v1.2.3)
+  # ──────────────────────────────────────────────────────────────
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: LangSwitcher-windows-x64
+          path: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "LangSwitcher ${{ github.ref_name }}"
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}  # e.g. v1.0.0-beta → pre-release
+          generate_release_notes: true
+          files: dist/LangSwitcher.exe
