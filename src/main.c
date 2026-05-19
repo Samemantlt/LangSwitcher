@@ -56,7 +56,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg,
             MessageBoxW(NULL,
                 L"LangSwitcher\n\n"
                 L"Select text in any application,\n"
-                L"then press  Shift + Scroll Lock\n"
+                L"then press  Shift + PauseBreak\n"
                 L"to switch the keyboard layout.\n\n"
                 L"EN \u2194 RU  (QWERTY \u2194 \u0419\u0426\u0423\u041a\u0415\u041d)\n\n"
                 L"Right-click the tray icon to exit.",

@@ -22,7 +22,7 @@ void tray_add(HWND hWnd)
     s_nid.uFlags           = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     s_nid.uCallbackMessage = WM_TRAYICON;
     s_nid.hIcon            = LoadIcon(NULL, IDI_APPLICATION);
-    wcscpy(s_nid.szTip, L"LangSwitcher  [Shift+Scroll Lock]");
+    wcscpy(s_nid.szTip, L"LangSwitcher  [Shift+PauseBreak]");
     Shell_NotifyIconW(NIM_ADD, &s_nid);
 }
 
@@ -41,7 +41,7 @@ void tray_show_menu(HWND hWnd)
 {
     HMENU hMenu = CreatePopupMenu();
     AppendMenuW(hMenu, MF_STRING | MF_GRAYED, ID_TRAY_ABOUT,
-                L"LangSwitcher  [Shift+Scroll Lock]");
+                L"LangSwitcher  [Shift+PauseBreak]");
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_ABOUT, L"About...");
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT,  L"Exit");

@@ -1,7 +1,7 @@
 /*
  * hotkey.h - Global hotkey constants for LangSwitcher
  *
- * Default hotkey: Shift + Scroll Lock
+ * Default hotkey: Shift + Pause/Break
  * Change HOTKEY_MOD / HOTKEY_VK to remap.
  */
 
@@ -17,4 +17,4 @@
 #endif
 
 #define HOTKEY_MOD      (MOD_SHIFT | MOD_NOREPEAT)
-#define HOTKEY_VK       VK_SCROLL    /* Shift + Scroll Lock */
+#define HOTKEY_VK       VK_PAUSE    /* Shift + Pause/Break */
