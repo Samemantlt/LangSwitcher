@@ -12,6 +12,7 @@
 /* Context-menu command IDs */
 #define ID_TRAY_ABOUT   1001
 #define ID_TRAY_EXIT    1002
+#define ID_TRAY_STARTUP 1003
 
 /* Add the tray icon for `hWnd`. Call once at startup. */
 void tray_add(HWND hWnd);

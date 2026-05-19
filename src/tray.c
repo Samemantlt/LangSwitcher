@@ -3,6 +3,7 @@
  */
 
 #include "tray.h"
+#include "startup.h"
 
 #include <ole2.h>       /* provides REFIID needed by old MinGW shellapi.h */
 #include <shellapi.h>
@@ -43,9 +44,15 @@ void tray_remove(void)
  * --------------------------------------------------------------------------- */
 void tray_show_menu(HWND hWnd)
 {
-    HMENU hMenu = CreatePopupMenu();
+    BOOL  autostart = startup_is_enabled();
+    HMENU hMenu     = CreatePopupMenu();
     AppendMenuW(hMenu, MF_STRING | MF_GRAYED, ID_TRAY_ABOUT,
                 L"LangSwitcher  [Shift+PauseBreak]");
+    AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+    AppendMenuW(hMenu,
+                MF_STRING | (autostart ? MF_CHECKED : MF_UNCHECKED),
+                ID_TRAY_STARTUP,
+                L"Start with Windows");
     AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_ABOUT, L"About...");
     AppendMenuW(hMenu, MF_STRING, ID_TRAY_EXIT,  L"Exit");

@@ -15,6 +15,7 @@
 #include <windows.h>
 
 #include "hotkey.h"
+#include "startup.h"
 #include "switcher.h"
 #include "tray.h"
 
@@ -49,6 +50,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg,
      * ------------------------------------------------------------------ */
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
+
+        case ID_TRAY_STARTUP:
+            startup_set(!startup_is_enabled());
+            break;
 
         case ID_TRAY_EXIT:
             PostQuitMessage(0);
@@ -137,6 +142,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     /* Add tray icon */
     tray_add(hWnd);
+
+    /* On first run, ask the user whether to start with Windows */
+    startup_prompt_if_first_run();
 
     /* Message loop */
     MSG msg;

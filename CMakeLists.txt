@@ -22,6 +22,7 @@ set(SOURCES
     src/clipboard.c
     src/input.c
     src/switcher.c
+    src/startup.c
     src/tray.c
     src/resources.rc
 )
@@ -64,5 +65,6 @@ target_link_libraries(LangSwitcher PRIVATE
     kernel32
     gdi32
     shell32
-    ole32   # provides COM types required by shellapi.h on older MinGW
+    ole32     # provides COM types required by shellapi.h on older MinGW
+    advapi32  # registry API (RegOpenKeyExW, RegSetValueExW, etc.)
 )
