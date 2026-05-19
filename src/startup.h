@@ -1,8 +1,10 @@
 /*
- * startup.h - "Start with Windows" registry helpers for LangSwitcher
+ * startup.h - "Start with Windows" helpers for LangSwitcher
  *
- * Uses HKCU\Software\Microsoft\Windows\CurrentVersion\Run so that no
- * elevated privileges are required.
+ * Because the executable requires administrator elevation, autostart is
+ * implemented via a Task Scheduler task (run level HIGHEST) rather than the
+ * HKCU\...\Run registry key — Windows silently skips Run entries that would
+ * trigger a UAC prompt at login.
  */
 
 #pragma once
@@ -10,13 +12,12 @@
 #include <windows.h>
 
 /*
- * Returns TRUE if the autostart registry value is present and points to
- * the current executable.
+ * Returns TRUE if the LangSwitcher autostart task exists in Task Scheduler.
  */
 BOOL startup_is_enabled(void);
 
 /*
- * Adds or removes the autostart registry value.
+ * Creates or deletes the Task Scheduler autostart task.
  * Pass TRUE to enable, FALSE to disable.
  * Returns TRUE on success.
  */

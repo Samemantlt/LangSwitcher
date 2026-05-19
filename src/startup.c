@@ -1,41 +1,78 @@
 /*
- * startup.c - "Start with Windows" registry helpers for LangSwitcher
+ * startup.c - "Start with Windows" helpers for LangSwitcher
  *
- * Registry key: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
- * Value name  : LangSwitcher
- * Value data  : Full path to the running executable (quoted).
+ * Because the executable requests administrator elevation (requireAdministrator
+ * manifest), the HKCU\...\Run registry key cannot be used for autostart:
+ * Windows silently skips Run entries that require UAC elevation at login.
  *
- * No elevated privileges are required because we write to HKCU.
+ * Instead we create a Task Scheduler task with "Run with highest privileges"
+ * using the built-in schtasks.exe command-line tool — no COM/XML required.
+ *
+ *   Task name : LangSwitcher
+ *   Trigger   : At log on of the current user
+ *   Action    : Launch the running executable
+ *   Run level : HIGHEST  (equivalent to "Run as administrator")
  */
 
 #include "startup.h"
 
 #include <wchar.h>
+#include <stdio.h>
 
-#define RUN_KEY  L"Software\\Microsoft\\Windows\\CurrentVersion\\Run"
-#define APP_NAME L"LangSwitcher"
+#define TASK_NAME L"LangSwitcher"
+
+/* ---------------------------------------------------------------------------
+ * Internal helpers
+ * --------------------------------------------------------------------------- */
+
+/** Run a command via cmd.exe /C and return its exit code. */
+static int run_command(const WCHAR *cmdLine)
+{
+    STARTUPINFOW        si = {0};
+    PROCESS_INFORMATION pi = {0};
+    si.cb = sizeof(si);
+
+    /* We need a mutable copy for CreateProcessW */
+    WCHAR buf[2048];
+    _snwprintf(buf, 2047, L"cmd.exe /C %s", cmdLine);
+    buf[2047] = L'\0';
+
+    BOOL ok = CreateProcessW(
+        NULL, buf,
+        NULL, NULL, FALSE,
+        CREATE_NO_WINDOW,   /* hide the console window */
+        NULL, NULL,
+        &si, &pi);
+
+    if (!ok)
+        return -1;
+
+    WaitForSingleObject(pi.hProcess, 10000);
+
+    DWORD exitCode = 0;
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return (int)exitCode;
+}
+
+/** Query whether the scheduled task named TASK_NAME exists. */
+static BOOL task_exists(void)
+{
+    /* schtasks /Query exits 0 if found, non-zero otherwise */
+    WCHAR cmd[256];
+    _snwprintf(cmd, 255,
+               L"schtasks /Query /TN \"%s\" >NUL 2>&1",
+               TASK_NAME);
+    return (run_command(cmd) == 0);
+}
 
 /* ---------------------------------------------------------------------------
  * startup_is_enabled
  * --------------------------------------------------------------------------- */
 BOOL startup_is_enabled(void)
 {
-    HKEY  hKey   = NULL;
-    BOOL  result = FALSE;
-
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, RUN_KEY, 0, KEY_READ, &hKey)
-            != ERROR_SUCCESS)
-        return FALSE;
-
-    /* Check whether the value exists */
-    DWORD type  = 0;
-    DWORD bytes = 0;
-    LONG  rc    = RegQueryValueExW(hKey, APP_NAME, NULL, &type, NULL, &bytes);
-    if (rc == ERROR_SUCCESS && type == REG_SZ)
-        result = TRUE;
-
-    RegCloseKey(hKey);
-    return result;
+    return task_exists();
 }
 
 /* ---------------------------------------------------------------------------
@@ -43,33 +80,34 @@ BOOL startup_is_enabled(void)
  * --------------------------------------------------------------------------- */
 BOOL startup_set(BOOL enable)
 {
-    HKEY hKey = NULL;
-    LONG rc;
-
-    rc = RegOpenKeyExW(HKEY_CURRENT_USER, RUN_KEY, 0, KEY_SET_VALUE, &hKey);
-    if (rc != ERROR_SUCCESS)
-        return FALSE;
-
     if (enable) {
-        /* Build a quoted path: "C:\path\to\LangSwitcher.exe" */
+        /* Get the full path of the running executable */
         WCHAR exePath[MAX_PATH] = {0};
         GetModuleFileNameW(NULL, exePath, MAX_PATH);
 
-        WCHAR quoted[MAX_PATH + 4] = {0};
-        _snwprintf(quoted, MAX_PATH + 3, L"\"%s\"", exePath);
-
-        DWORD bytes = (DWORD)((wcslen(quoted) + 1) * sizeof(WCHAR));
-        rc = RegSetValueExW(hKey, APP_NAME, 0, REG_SZ,
-                            (const BYTE *)quoted, bytes);
+        /*
+         * Create (or replace) the task:
+         *   /SC ONLOGON          – trigger: at logon
+         *   /RL HIGHEST          – run level: highest privileges (admin)
+         *   /F                   – force-overwrite if task already exists
+         *   /DELAY 0000:05       – small delay so the desktop is ready
+         */
+        WCHAR cmd[1024];
+        _snwprintf(cmd, 1023,
+                   L"schtasks /Create /TN \"%s\" /TR \"\\\"%s\\\"\" "
+                   L"/SC ONLOGON /RL HIGHEST /F /DELAY 0000:05 >NUL 2>&1",
+                   TASK_NAME, exePath);
+        return (run_command(cmd) == 0);
     } else {
-        rc = RegDeleteValueW(hKey, APP_NAME);
-        /* Treat "value not found" as success */
-        if (rc == ERROR_FILE_NOT_FOUND)
-            rc = ERROR_SUCCESS;
+        /* Delete the task */
+        WCHAR cmd[256];
+        _snwprintf(cmd, 255,
+                   L"schtasks /Delete /TN \"%s\" /F >NUL 2>&1",
+                   TASK_NAME);
+        int rc = run_command(cmd);
+        /* Exit code 1 means "task not found" — treat as success */
+        return (rc == 0 || rc == 1);
     }
-
-    RegCloseKey(hKey);
-    return (rc == ERROR_SUCCESS);
 }
 
 /* ---------------------------------------------------------------------------

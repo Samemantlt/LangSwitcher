@@ -3,6 +3,9 @@
  *
  * IDI_APP (1) is used both as the executable icon (shown in Explorer)
  * and loaded at runtime for the system-tray entry.
+ *
+ * CREATEPROCESS_MANIFEST_RESOURCE_ID embeds app.manifest so Windows
+ * always prompts for administrator elevation on launch.
  */
 
 #include <winresrc.h>
@@ -11,3 +14,6 @@
 
 /* Executable / Explorer icon */
 IDI_APP ICON "../icon.ico"
+
+/* UAC elevation manifest */
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "app.manifest"
