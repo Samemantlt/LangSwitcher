@@ -1,0 +1,13 @@
+/*
+ * resources.rc - Windows resource definitions
+ *
+ * IDI_APP (1) is used both as the executable icon (shown in Explorer)
+ * and loaded at runtime for the system-tray entry.
+ */
+
+#include <winresrc.h>
+
+#define IDI_APP 1
+
+/* Executable / Explorer icon */
+IDI_APP ICON "../icon.ico"

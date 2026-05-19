@@ -8,6 +8,9 @@
 #include <shellapi.h>
 #include <wchar.h>
 
+/* Resource ID matching resources.rc */
+#define IDI_APP 1
+
 /* Module-private tray data */
 static NOTIFYICONDATAW s_nid = {0};
 
@@ -21,7 +24,8 @@ void tray_add(HWND hWnd)
     s_nid.uID              = 1;
     s_nid.uFlags           = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     s_nid.uCallbackMessage = WM_TRAYICON;
-    s_nid.hIcon            = LoadIcon(NULL, IDI_APPLICATION);
+    s_nid.hIcon            = LoadIconW(GetModuleHandleW(NULL),
+                                       MAKEINTRESOURCEW(IDI_APP));
     wcscpy(s_nid.szTip, L"LangSwitcher  [Shift+PauseBreak]");
     Shell_NotifyIconW(NIM_ADD, &s_nid);
 }

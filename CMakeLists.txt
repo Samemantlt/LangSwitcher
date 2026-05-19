@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.15)
 project(LangSwitcher
     VERSION     1.0.0
     DESCRIPTION "Switch keyboard layout of selected text (EN <-> RU)"
-    LANGUAGES   C
+    LANGUAGES   C RC
 )
 
 # ---------------------------------------------------------------------------
@@ -23,6 +23,7 @@ set(SOURCES
     src/input.c
     src/switcher.c
     src/tray.c
+    src/resources.rc
 )
 
 # ---------------------------------------------------------------------------
