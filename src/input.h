@@ -22,3 +22,11 @@ void send_ctrl(WORD vk);
  * a held Shift does not turn them into Ctrl+Shift+C / Ctrl+Shift+V.
  */
 void release_modifiers(void);
+
+/*
+ * Re-select the just-pasted text by sending Shift+Left n times as a single
+ * batched SendInput call.  Call this after Ctrl+V to restore the selection
+ * that was lost during the copy-convert-paste cycle.
+ * If n is 0 the function is a no-op.
+ */
+void select_backward(size_t n);

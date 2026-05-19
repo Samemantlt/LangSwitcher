@@ -1,5 +1,5 @@
 /*
- * converter.c - EN <-> RU keyboard layout conversion implementation
+ * converter.c - EN <-> RU keyboard layout conversion and case toggling
  *
  * Layout: standard QWERTY (EN) <-> JCUKEN / ЙЦУКЕН (RU)
  *
@@ -82,5 +82,32 @@ void convert_layout(wchar_t *text, size_t len)
         }
         /* No match — leave character unchanged */
         next:;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * toggle_caps
+ * --------------------------------------------------------------------------- */
+
+void toggle_caps(wchar_t *text, size_t len)
+{
+    for (size_t i = 0; i < len; i++) {
+        wchar_t c = text[i];
+
+        /* Ё (U+0401) / ё (U+0451) sit outside the contiguous Cyrillic block */
+        if (c == L'\u0401') { text[i] = L'\u0451'; continue; } /* Ё -> ё */
+        if (c == L'\u0451') { text[i] = L'\u0401'; continue; } /* ё -> Ё */
+
+        /* Latin A-Z  (U+0041-U+005A)  ->  a-z  (U+0061-U+007A)  offset +0x20 */
+        if (c >= L'A' && c <= L'Z') { text[i] = c + 0x20; continue; }
+        /* Latin a-z  (U+0061-U+007A)  ->  A-Z  (U+0041-U+005A)  offset -0x20 */
+        if (c >= L'a' && c <= L'z') { text[i] = c - 0x20; continue; }
+
+        /* Cyrillic А-Я (U+0410-U+042F)  ->  а-я (U+0430-U+044F)  offset +0x20 */
+        if (c >= L'\u0410' && c <= L'\u042F') { text[i] = c + 0x20; continue; }
+        /* Cyrillic а-я (U+0430-U+044F)  ->  А-Я (U+0410-U+042F)  offset -0x20 */
+        if (c >= L'\u0430' && c <= L'\u044F') { text[i] = c - 0x20; continue; }
+
+        /* Everything else (digits, punctuation, spaces) — leave unchanged */
     }
 }

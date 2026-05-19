@@ -32,6 +32,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg,
     case WM_HOTKEY:
         if ((int)wParam == HOTKEY_ID)
             do_switch();
+        else if ((int)wParam == HOTKEY_ID_CAPS)
+            do_caps_switch();
         return 0;
 
     /* ------------------------------------------------------------------
@@ -55,10 +57,11 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg,
         case ID_TRAY_ABOUT:
             MessageBoxW(NULL,
                 L"LangSwitcher\n\n"
-                L"Select text in any application,\n"
-                L"then press  Shift + PauseBreak\n"
-                L"to switch the keyboard layout.\n\n"
-                L"EN \u2194 RU  (QWERTY \u2194 \u0419\u0426\u0423\u041a\u0415\u041d)\n\n"
+                L"Select text in any application, then:\n\n"
+                L"  Shift + PauseBreak\n"
+                L"    Switch keyboard layout (EN \u2194 RU)\n\n"
+                L"  Shift + Alt + PauseBreak\n"
+                L"    Toggle caps  (HELLO guy \u2192 hello GUY)\n\n"
                 L"Right-click the tray icon to exit.",
                 L"About LangSwitcher",
                 MB_OK | MB_ICONINFORMATION);
@@ -72,6 +75,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg,
     case WM_DESTROY:
         tray_remove();
         UnregisterHotKey(hWnd, HOTKEY_ID);
+        UnregisterHotKey(hWnd, HOTKEY_ID_CAPS);
         PostQuitMessage(0);
         return 0;
 
@@ -115,13 +119,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         return 1;
     }
 
-    /* Register the global hotkey */
+    /* Register the global hotkeys */
     if (!RegisterHotKey(hWnd, HOTKEY_ID, HOTKEY_MOD, HOTKEY_VK)) {
         MessageBoxW(NULL,
             L"Failed to register Shift+Pause hotkey.\n"
             L"Another instance may already be running.",
             L"LangSwitcher", MB_ICONWARNING);
         return 1;
+    }
+    if (!RegisterHotKey(hWnd, HOTKEY_ID_CAPS, HOTKEY_CAPS_MOD, HOTKEY_CAPS_VK)) {
+        MessageBoxW(NULL,
+            L"Failed to register Shift+Alt+Pause hotkey.\n"
+            L"The caps-toggle feature will be unavailable.",
+            L"LangSwitcher", MB_ICONWARNING);
+        /* Non-fatal: continue running with layout-switch only */
     }
 
     /* Add tray icon */
